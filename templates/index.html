@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Supplies</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Supplies</h1>
+    <div class="topbar-actions">
+      <input id="search" type="search" placeholder="Search…" autocomplete="off">
+      <button id="add-btn" type="button">+ Add</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="list" aria-live="polite"></div>
+    <p id="empty" class="empty" hidden>No products yet — tap “+ Add” to start.</p>
+  </main>
+
+  <!-- Add/edit modal — hidden until a button opens it -->
+  <dialog id="form-dialog">
+    <form id="product-form" method="dialog">
+      <h2 id="form-title">Add product</h2>
+      <label>Name <input name="name" required maxlength="120"></label>
+      <label>Quantity <input name="quantity" type="number" min="0" step="1" value="1"></label>
+      <label>Category
+        <input name="category" list="category-suggestions" maxlength="60">
+        <datalist id="category-suggestions"></datalist>
+      </label>
+      <label>Expiry date <input name="expiry_date" type="date"></label>
+      <p class="form-error" id="form-error" hidden></p>
+      <menu>
+        <button type="button" id="form-delete" class="danger" hidden>Delete</button>
+        <button type="button" id="form-cancel">Cancel</button>
+        <button type="submit" id="form-save">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
