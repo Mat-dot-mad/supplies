@@ -1,0 +1,27 @@
+[Unit]
+Description=Supplies Cellar Inventory Flask App
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=supplies
+Group=supplies
+WorkingDirectory=/opt/supplies/app
+EnvironmentFile=/etc/supplies.env
+ExecStart=/opt/supplies/app/venv/bin/gunicorn app:app --bind 0.0.0.0:${PORT} --workers 1 --timeout 120
+Restart=on-failure
+RestartSec=5
+
+# Hardening — same posture as portfolio/watchlist
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/supplies /opt/supplies/app
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
