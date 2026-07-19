@@ -67,6 +67,7 @@ sudo tail /var/log/supplies-backup.log
 2. Local retention: 7 days
 3. `rclone copy` → `gdrive:supplies-backups/`
 4. Drive retention: 30 days
+5. Success ping to healthchecks.io (`HEALTHCHECK_URL` in `/etc/supplies.env`) — an alert email arrives if the backup stops running for any reason, including the Pi being down
 
 To test the restore path:
 

@@ -24,3 +24,12 @@ rclone delete gdrive:supplies-backups \
     --config /root/.config/rclone/rclone.conf \
     --log-file /var/log/supplies-backup.log \
     --log-level INFO
+
+# 5. Dead man's switch: ping healthchecks.io on success. Because of `set -e`
+#    we only reach this line if every step above worked, so a missed ping
+#    (whatever the cause — script error, Pi down) triggers an alert email.
+#    HEALTHCHECK_URL lives in /etc/supplies.env, not in this public repo.
+source /etc/supplies.env
+if [ -n "${HEALTHCHECK_URL:-}" ]; then
+    curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL"
+fi
