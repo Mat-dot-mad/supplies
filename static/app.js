@@ -60,13 +60,18 @@ async function refresh() {
 // ---- Rendering ------------------------------------------------------------
 
 function groupByCategory(products) {
+  // Key case-insensitively so "Pantry" and "pantry" land in one group;
+  // the first spelling seen becomes the displayed label.
   const groups = new Map();
   for (const p of products) {
-    const key = p.category || "Uncategorised";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
+    const label = p.category || "Uncategorised";
+    const key = label.toLowerCase();
+    if (!groups.has(key)) groups.set(key, { label, items: [] });
+    groups.get(key).items.push(p);
   }
-  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  return [...groups.values()]
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((g) => [g.label, g.items]);
 }
 
 function el(tag, attrs = {}, ...children) {
@@ -250,8 +255,9 @@ function refreshCategorySuggestions() {
   datalist.innerHTML = "";
   const seen = new Set();
   for (const p of state.products) {
-    if (p.category && !seen.has(p.category)) {
-      seen.add(p.category);
+    const key = (p.category || "").toLowerCase();
+    if (key && !seen.has(key)) {
+      seen.add(key);
       datalist.append(el("option", { value: p.category }));
     }
   }
@@ -267,6 +273,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("search").addEventListener("input", (e) => {
     state.search = e.target.value.trim().toLowerCase();
     render();
+  });
+  // Two people share this app: re-fetch whenever the tab comes back into
+  // view, so a phone reopened after hours doesn't show (and edit) stale data.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refresh().catch((e) => console.error(e));
   });
   refresh().catch((e) => console.error(e));
 });

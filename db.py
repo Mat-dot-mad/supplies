@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime
 
 # DB lives next to the code locally; on the Pi the systemd unit will set
@@ -10,10 +11,17 @@ DB_PATH = os.environ.get(
 )
 
 
+@contextmanager
 def get_db():
+    # sqlite3's own `with conn:` handles commit/rollback but never closes the
+    # connection; this wrapper does both, so callers can't leak connections.
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db():
@@ -87,17 +95,15 @@ def update_product(product_id, fields):
 
 
 def adjust_quantity(product_id, delta):
+    # Single atomic UPDATE: the DB computes the new value, so two concurrent
+    # taps can't read the same starting quantity and lose one of the changes.
     with get_db() as conn:
-        row = conn.execute(
-            "SELECT quantity FROM products WHERE id = ?", (product_id,)
-        ).fetchone()
-        if row is None:
-            return None
-        new_qty = max(0, row["quantity"] + delta)
-        conn.execute(
-            "UPDATE products SET quantity = ?, updated_at = ? WHERE id = ?",
-            (new_qty, datetime.now().isoformat(timespec="seconds"), product_id),
+        cur = conn.execute(
+            "UPDATE products SET quantity = MAX(0, quantity + ?), updated_at = ? WHERE id = ?",
+            (delta, datetime.now().isoformat(timespec="seconds"), product_id),
         )
+        if cur.rowcount == 0:
+            return None
     return get_product(product_id)
 
 
